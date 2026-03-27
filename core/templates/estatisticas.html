@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-8">
+    <div class="border-b border-slate-200 pb-4">
+        <h1 class="text-3xl font-black text-slate-800 tracking-tight">Estatísticas do Sistema</h1>
+        <p class="text-slate-500 mt-1">Visão global da operação do HRADAR.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col items-center justify-center text-center">
+            <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-3xl mb-4">👥</div>
+            <h2 class="text-5xl font-black text-slate-800">{{ total_usuarios }}</h2>
+            <p class="text-sm font-bold text-slate-400 uppercase tracking-widest mt-2">Agentes Ativos</p>
+        </div>
+        
+        <div class="bg-slate-50 rounded-2xl border border-dashed border-slate-300 p-6 flex flex-col items-center justify-center text-center opacity-50">
+            <p class="text-xs font-bold text-slate-400 uppercase">Espaço Reservado (V 1.2)</p>
+        </div>
+        <div class="bg-slate-50 rounded-2xl border border-dashed border-slate-300 p-6 flex flex-col items-center justify-center text-center opacity-50">
+            <p class="text-xs font-bold text-slate-400 uppercase">Espaço Reservado (V 1.2)</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

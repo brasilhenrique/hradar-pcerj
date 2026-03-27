@@ -1,0 +1,124 @@
+{% load static tailwind_tags %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ativação de Conta - HRADAR</title>
+    {% tailwind_css %}
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Inter', sans-serif; } </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4">
+
+    <div class="max-w-2xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
+
+        <div class="bg-blue-900 p-8 text-center">
+            <h1 class="text-3xl font-black text-white tracking-tight uppercase italic">🛡️ Primeiro Acesso</h1>
+            <p class="text-blue-200 text-sm mt-2 font-medium">Configuração de segurança e aceite de termos.</p>
+        </div>
+
+        <div class="p-8 md:p-10">
+            <form method="POST" id="activation-form" class="space-y-8">
+                {% csrf_token %}
+
+                <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 text-xs text-slate-600 leading-relaxed shadow-inner max-h-80 overflow-y-auto">
+                    <h3 class="font-bold text-red-700 mb-4 uppercase flex items-center gap-2 text-sm border-b border-red-100 pb-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        Termo de Ciência e Responsabilidade
+                    </h3>
+
+                    <p class="mb-3">
+                        <strong class="text-slate-800 block mb-1">1. FERRAMENTA AUXILIAR (NÃO SUBSTITUTIVA)</strong>
+                        O servidor declara estar ciente de que o HRADAR é uma ferramenta tecnológica de apoio à gestão. O uso deste sistema <strong class="text-red-600 uppercase">NÃO SUBSTITUI</strong>, em hipótese alguma, o dever funcional do Agente de Pessoal de realizar a leitura oficial, integral e diária dos Boletins Internos.
+                    </p>
+
+                    <p class="mb-3">
+                        <strong class="text-slate-800 block mb-1">2. ISENÇÃO DE RESPONSABILIDADE</strong>
+                        O desenvolvedor e a administração do sistema <strong class="text-red-600 uppercase">NÃO SE RESPONSABILIZAM</strong> por eventuais omissões, falhas de OCR (leitura de caracteres), erros de interpretação automática ou imprecisões nos resultados da varredura. A conferência final da veracidade e completude das informações é de responsabilidade exclusiva do usuário.
+                    </p>
+
+                    <p class="mb-3">
+                        <strong class="text-slate-800 block mb-1">3. SIGILO PROFISSIONAL</strong>
+                        O acesso às informações processadas é estritamente profissional. Dados extraídos de publicações internas devem ser tratados com o sigilo previsto no Estatuto dos Policiais Civis e legislação pertinente, sob as penas do Art. 325 do Código Penal (Violação de Sigilo Funcional).
+                    </p>
+
+                    <p class="mb-1">
+                        <strong class="text-slate-800 block mb-1">4. SEGURANÇA DE ACESSO</strong>
+                        O uso de credenciais de terceiros ou o compartilhamento de sua senha pessoal é proibido, auditável e passível de sanção administrativa.
+                    </p>
+                </div>
+
+                <div class="flex items-start gap-3 p-4 bg-blue-50 rounded-xl border border-blue-100 hover:border-blue-300 transition-colors">
+                    <div class="flex items-center h-5">
+                        <input type="checkbox" name="disclaimer" id="disclaimer" required class="w-5 h-5 text-blue-900 border-slate-300 rounded focus:ring-blue-500 cursor-pointer">
+                    </div>
+                    <label for="disclaimer" class="font-bold text-blue-900 text-xs cursor-pointer select-none leading-tight">
+                        Li, compreendi e concordo integralmente com os termos de uso, especialmente quanto à natureza auxiliar da ferramenta e minha responsabilidade de conferência.
+                    </label>
+                </div>
+
+                <div class="border-t border-slate-100 my-6"></div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                        <label class="block text-xs font-black text-slate-500 uppercase tracking-wider">Definir Nova Senha</label>
+                        <input type="password" name="password" required class="block w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500 outline-none" placeholder="••••••••">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="block text-xs font-black text-slate-500 uppercase tracking-wider">Confirmar Senha</label>
+                        <input type="password" name="confirm_password" required class="block w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500 outline-none" placeholder="••••••••">
+                    </div>
+                </div>
+
+                {% if messages %}
+                    {% for message in messages %}
+                    <div class="text-red-600 text-xs font-bold text-center bg-red-50 p-2 rounded-lg border border-red-100">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                {% endif %}
+
+                <div class="flex flex-col sm:flex-row gap-4 pt-2">
+                    <button type="button" onclick="document.getElementById('form-logout').submit();" class="w-full sm:w-1/3 bg-slate-100 text-slate-500 py-4 rounded-xl font-black hover:bg-slate-200 hover:text-slate-700 transition-all text-center uppercase tracking-widest text-xs flex justify-center items-center">
+                        Cancelar e Sair
+                    </button>
+
+                    <button type="submit" id="btn-submit" class="w-full sm:w-2/3 bg-blue-900 text-white py-4 rounded-xl font-black hover:bg-blue-800 transition-all shadow-lg uppercase tracking-widest text-sm flex justify-center items-center gap-2 group">
+                        <span id="btn-text">Confirmar e Ativar</span>
+
+                        <div id="btn-spinner" class="hidden">
+                            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </div>
+
+                        <svg id="btn-icon" class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-4 4m4-4H3"></path></svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <form id="form-logout" method="POST" action="{% url 'logout' %}" style="display: none;">
+        {% csrf_token %}
+    </form>
+
+    <script>
+        document.getElementById('activation-form').onsubmit = function() {
+            const btn = document.getElementById('btn-submit');
+            const text = document.getElementById('btn-text');
+            const spinner = document.getElementById('btn-spinner');
+            const icon = document.getElementById('btn-icon');
+
+            btn.disabled = true;
+            btn.classList.add('opacity-80', 'cursor-wait');
+
+            text.innerText = "ATIVANDO...";
+            spinner.classList.remove('hidden');
+            icon.classList.add('hidden');
+        };
+    </script>
+</body>
+</html>

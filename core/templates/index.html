@@ -1,0 +1,390 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="max-w-7xl mx-auto space-y-8">
+
+    <div class="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-slate-200 pb-4">
+        <div>
+            <h1 class="text-3xl font-black text-slate-800 tracking-tight">Análise de BI</h1>
+            <p class="text-slate-500 mt-1">Carregue o Boletim Interno (PDF) para cruzar dados com sua Watchlist.</p>
+        </div>
+        <div class="flex items-center gap-2 text-xs font-semibold bg-green-50 text-green-700 px-3 py-1 rounded-full border border-green-100 shadow-sm">
+            <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Sistema Operante
+        </div>
+    </div>
+
+    {% if messages %}
+        <div class="space-y-3">
+            {% for message in messages %}
+                <div class="p-4 rounded-xl border flex items-center gap-3 font-bold text-sm shadow-sm
+                    {% if message.tags == 'error' %} bg-red-50 border-red-200 text-red-700
+                    {% elif message.tags == 'warning' %} bg-amber-50 border-amber-200 text-amber-700
+                    {% elif message.tags == 'success' %} bg-green-50 border-green-200 text-green-700
+                    {% else %} bg-blue-50 border-blue-200 text-blue-700 {% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-1">
+        <form method="POST" enctype="multipart/form-data" id="form-analise" class="flex flex-col md:flex-row gap-0 md:gap-4 p-6 items-center justify-between">
+            {% csrf_token %}
+            <div class="w-full md:w-2/3 relative group">
+                <input type="file" name="pdf" id="file-input" accept=".pdf" required class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                <div id="drop-zone-visual" class="border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 h-28 flex flex-col items-center justify-center transition-all group-hover:border-blue-400 group-hover:bg-blue-50">
+                    <div id="state-empty" class="text-center">
+                        <p class="text-sm font-bold text-slate-500 uppercase tracking-wide">Selecionar PDF do Boletim</p>
+                    </div>
+                    <div id="state-selected" class="hidden flex items-center gap-3 text-blue-900 bg-blue-100 px-4 py-2 rounded-lg border border-blue-200">
+                        <span id="file-name-text" class="font-bold text-sm truncate max-w-[300px]"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="w-full md:w-1/3 mt-4 md:mt-0">
+                <button type="submit" id="btn-submit" class="w-full h-28 bg-slate-800 hover:bg-slate-900 text-white rounded-xl shadow-md transition-all flex flex-col items-center justify-center gap-2 group">
+                    <span id="btn-text" class="font-black text-sm uppercase tracking-widest">Iniciar Varredura</span>
+                </button>
+            </div>
+        </form>
+
+        {% if alertas %}
+        <div class="border-t border-slate-100 bg-slate-50 rounded-b-xl px-6 py-3 flex justify-between items-center">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Varredura Concluída</span>
+            <a href="{% url 'limpar_varredura' %}" class="text-[11px] font-black text-red-500 hover:text-red-700 uppercase transition-colors flex items-center gap-2 bg-red-50 px-3 py-1.5 rounded-lg border border-red-100 shadow-sm">
+                🗑️ Limpar Tela e Voltar pro Zero
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if alertas %}
+    {% if alertas.convocacoes %}
+        <div class="w-full border-b-2 border-slate-200 mt-8 mb-6 pb-2">
+            <h3 class="font-black text-slate-400 uppercase tracking-widest text-xs">Convocações / Audiências</h3>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            {% for a in alertas.convocacoes %}
+            <div class="relative flex flex-col h-full">
+                <div class="bg-white border-l-4 {% if a.etiqueta and a.etiqueta != 'GERAL' %}{{ a.cor_css.border }}{% else %}border-amber-500{% endif %} rounded-xl shadow-sm p-6 flex flex-col flex-1">
+
+                    <div class="flex justify-between items-start mb-6">
+                        <h4 class="font-black text-slate-800 uppercase text-md leading-tight flex-1">{{ a.alvo }}</h4>
+                        <span class="font-mono font-bold text-amber-900 bg-amber-50 px-2 py-1 rounded border border-amber-200 text-[10px]">{{ a.identificador }}</span>
+                    </div>
+
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Prévia da Mensagem (WhatsApp)</label>
+                    <textarea id="msg-conv-{{ forloop.counter }}" readonly class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-[11px] text-slate-700 h-40 resize-y mb-4 font-mono focus:ring-0 focus:border-slate-300 outline-none">{{ a.whatsapp }}</textarea>
+
+                    <div class="mt-auto">
+                        <button id="btn-conv-{{ forloop.counter }}" onclick="copiarSemAlert('msg-conv-{{ forloop.counter }}', 'btn-conv-{{ forloop.counter }}')" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-lg font-black uppercase text-[11px] shadow-sm flex items-center justify-center gap-2 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            COPIAR PARA O CLIPBOARD
+                        </button>
+                        <p class="text-[10px] text-slate-500 text-center mt-3 font-semibold flex items-center justify-center gap-1">
+                            ⚠️ Antes de enviar para o servidor, confira os dados no BI.
+                        </p>
+                    </div>
+
+                    <details class="mt-5 border-t border-slate-100 pt-3 group cursor-pointer">
+                        <summary class="text-[10px] font-bold text-slate-400 hover:text-slate-600 text-center uppercase list-none flex justify-center items-center gap-1 group-open:mb-3 transition-colors">
+                            👁️ Ver leitura do robô
+                            <svg class="w-3 h-3 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </summary>
+                        <p class="text-[11px] text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-200 italic">"...{{ a.contexto|safe }}..."</p>
+                    </details>
+
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+
+        {% if alertas.entradas or alertas.saidas or alertas.alvos_transferidos or alertas.movimentacoes_internas %}
+        <div class="w-full border-b-2 border-slate-200 mt-8 mb-6 pb-2">
+            <h3 class="font-black text-slate-400 uppercase tracking-widest text-xs">Entradas e Saídas (Lotações)</h3>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            {% for t in alertas.entradas %}
+            <div class="relative flex flex-col h-full">
+                <div class="w-fit bg-blue-100 border-t-2 border-l-2 border-r-2 border-blue-400 rounded-t-xl px-4 py-2 relative z-10 -mb-[2px] flex items-center gap-2 shadow-sm">
+                    <span class="text-sm">📥</span>
+                    <h2 class="font-black text-blue-900 uppercase tracking-widest text-[10px]">Entrada de Servidor</h2>
+                </div>
+                <div class="bg-white border-2 border-blue-400 rounded-b-xl rounded-tr-xl shadow-md relative z-0 p-5 flex flex-col flex-1">
+                    <div class="flex justify-between items-start mb-4">
+                        <h4 class="font-black text-slate-800 uppercase text-sm">{{ t.NOME }}</h4>
+                        <span class="font-mono font-bold text-blue-700 bg-blue-50 px-2 py-1 rounded border border-blue-100 text-[10px]">{{ t.ID }}</span>
+                    </div>
+                    <div class="flex flex-col gap-1 text-[11px] font-bold bg-slate-50 p-3 rounded-lg border border-slate-200 mb-4">
+                        <div class="text-slate-500">DE: <span class="text-slate-600 ml-1">{{ t.ORIGEM }}</span></div>
+                        <div class="text-slate-500 mt-1">PARA: <span class="text-blue-600 ml-1">{{ t.DESTINO }}</span></div>
+                    </div>
+                    {% if t.DB_ID %}
+                    <div class="mt-auto text-center bg-blue-50 py-2.5 rounded border border-blue-200">
+                        <span class="text-[10px] font-black text-blue-600 uppercase tracking-widest">Já Monitorado</span>
+                    </div>
+                    {% else %}
+                    <form method="POST" action="{% url 'processar_transferencia' %}" class="mt-auto">
+                        {% csrf_token %}
+                        <input type="hidden" name="nome" value="{{ t.NOME }}">
+                        <input type="hidden" name="id_funcional" value="{{ t.ID_LIMPO }}">
+                        <button type="submit" name="acao" value="adicionar" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded font-black uppercase text-[10px] shadow-sm transition-all">
+                            Adicionar à Watchlist
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+
+            {% for t in alertas.saidas %}
+            <div class="relative flex flex-col h-full">
+                <div class="w-fit bg-orange-100 border-t-2 border-l-2 border-r-2 border-orange-400 rounded-t-xl px-4 py-2 relative z-10 -mb-[2px] flex items-center gap-2 shadow-sm">
+                    <span class="text-sm">📤</span>
+                    <h2 class="font-black text-orange-900 uppercase tracking-widest text-[10px]">Saída de Servidor</h2>
+                </div>
+                <div class="bg-white border-2 border-orange-400 rounded-b-xl rounded-tr-xl shadow-md relative z-0 p-5 flex flex-col flex-1">
+                    <div class="flex justify-between items-start mb-4">
+                        <h4 class="font-black text-slate-800 uppercase text-sm">{{ t.NOME }}</h4>
+                        <span class="font-mono font-bold text-orange-700 bg-orange-50 px-2 py-1 rounded border border-orange-100 text-[10px]">{{ t.ID }}</span>
+                    </div>
+                    <div class="flex flex-col gap-1 text-[11px] font-bold bg-slate-50 p-3 rounded-lg border border-slate-200 mb-4">
+                        <div class="text-slate-500">DE: <span class="text-orange-600 ml-1">{{ t.ORIGEM }}</span></div>
+                        <div class="text-slate-500 mt-1">PARA: <span class="text-slate-600 ml-1">{{ t.DESTINO }}</span></div>
+                    </div>
+                    {% if t.DB_ID %}
+                    <form method="POST" action="{% url 'processar_transferencia' %}" class="mt-auto">
+                        {% csrf_token %}
+                        <input type="hidden" name="nome" value="{{ t.NOME }}">
+                        <input type="hidden" name="id_funcional" value="{{ t.ID_LIMPO }}">
+                        <input type="hidden" name="servidor_id" value="{{ t.DB_ID }}">
+                        <button type="submit" name="acao" value="remover" class="w-full bg-orange-600 hover:bg-orange-700 text-white py-2.5 rounded font-black uppercase text-[10px] shadow-sm transition-all">
+                            Remover da Watchlist
+                        </button>
+                    </form>
+                    {% else %}
+                    <div class="mt-auto text-center bg-orange-50 py-2.5 rounded border border-orange-200">
+                        <span class="text-[10px] font-black text-orange-500 uppercase tracking-widest">Não Monitorado</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+
+            {% for t in alertas.movimentacoes_internas %}
+            <div class="relative flex flex-col h-full">
+                <div class="w-fit bg-stone-200 border-t-2 border-l-2 border-r-2 border-stone-400 rounded-t-xl px-4 py-2 relative z-10 -mb-[2px] flex items-center gap-2 shadow-sm">
+                    <span class="text-sm">🔀</span>
+                    <h2 class="font-black text-stone-900 uppercase tracking-widest text-[10px]">Movimentação Interna</h2>
+                </div>
+                <div class="bg-white border-2 border-stone-400 rounded-b-xl rounded-tr-xl shadow-md relative z-0 p-5 flex flex-col flex-1">
+                    <div class="flex justify-between items-start mb-4">
+                        <h4 class="font-black text-slate-800 uppercase text-sm">{{ t.NOME }}</h4>
+                        <span class="font-mono font-bold text-stone-700 bg-stone-100 px-2 py-1 rounded border border-stone-200 text-[10px]">{{ t.ID }}</span>
+                    </div>
+                    <div class="flex flex-col gap-1 text-[11px] font-bold bg-slate-50 p-3 rounded-lg border border-slate-200 mb-4">
+                        <div class="text-slate-500">DE: <span class="text-stone-700 ml-1">{{ t.ORIGEM }}</span></div>
+                        <div class="text-slate-500 mt-1">PARA: <span class="text-stone-700 ml-1">{{ t.DESTINO }}</span></div>
+                    </div>
+                    {% if t.DB_ID %}
+                    <form method="POST" action="{% url 'processar_transferencia' %}" class="mt-auto">
+                        {% csrf_token %}
+                        <input type="hidden" name="nome" value="{{ t.NOME }}">
+                        <input type="hidden" name="id_funcional" value="{{ t.ID_LIMPO }}">
+                        <input type="hidden" name="servidor_id" value="{{ t.DB_ID }}">
+                        <button type="submit" name="acao" value="atualizar" class="w-full bg-stone-700 hover:bg-stone-800 text-white py-2.5 rounded font-black uppercase text-[10px] shadow-sm transition-all">
+                            Ciente / Atualizar
+                        </button>
+                    </form>
+                    {% else %}
+                    <div class="mt-auto text-center bg-stone-100 py-2.5 rounded border border-stone-300">
+                        <span class="text-[10px] font-black text-stone-600 uppercase tracking-widest">Não Monitorado</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+
+            {% for t in alertas.alvos_transferidos %}
+            <div class="relative flex flex-col h-full">
+                <div class="w-fit bg-slate-200 border-t-2 border-l-2 border-r-2 border-slate-300 rounded-t-xl px-4 py-2 relative z-10 -mb-[2px] flex items-center gap-2 shadow-sm">
+                    <span class="text-sm">👁️</span>
+                    <h2 class="font-black text-slate-700 uppercase tracking-widest text-[10px]">Alvo Movimentado</h2>
+                </div>
+                <div class="bg-white border-2 border-slate-300 rounded-b-xl rounded-tr-xl shadow-md relative z-0 p-5 flex flex-col flex-1">
+                    <div class="flex justify-between items-start mb-4">
+                        <h4 class="font-black text-slate-800 uppercase text-sm">{{ t.NOME }}</h4>
+                        <span class="font-mono font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded border border-slate-200 text-[10px]">{{ t.ID }}</span>
+                    </div>
+                    <div class="flex flex-col gap-1 text-[11px] font-bold bg-slate-50 p-3 rounded-lg border border-slate-200 mb-4">
+                        <div class="text-slate-500">DE: <span class="text-slate-600 ml-1">{{ t.ORIGEM }}</span></div>
+                        <div class="text-slate-500 mt-1">PARA: <span class="text-slate-600 ml-1">{{ t.DESTINO }}</span></div>
+                    </div>
+                    <div class="mt-auto text-center border-t border-slate-100 pt-3">
+                        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Apenas Informativo</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if alertas.servidores or alertas.termos_encontrados %}
+        <div class="w-full border-b-2 border-slate-200 mt-8 mb-6 pb-2">
+            <h3 class="font-black text-slate-400 uppercase tracking-widest text-xs">Classificações e Alertas Diversos</h3>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+
+            {% for a in alertas.servidores %}
+                {% if a.etiqueta != 'GERAL' %}
+                <div class="relative flex flex-col h-full">
+                    <div class="w-fit {{ a.cor_css.bg }} border-t-2 border-l-2 border-r-2 {{ a.cor_css.border }} rounded-t-xl px-4 py-2 relative z-10 -mb-[2px] flex items-center gap-2 shadow-sm">
+                        <span class="text-sm">{{ a.cor_css.icon }}</span>
+                        <h2 class="font-black {{ a.cor_css.text }} uppercase tracking-widest text-[10px]">{{ a.etiqueta }}</h2>
+                    </div>
+                    <div class="bg-white border-2 {{ a.cor_css.border }} rounded-b-xl rounded-tr-xl shadow-md relative z-0 p-5 flex flex-col flex-1">
+                        <div class="flex justify-between items-start mb-4">
+                            <h4 class="font-black text-slate-800 uppercase text-sm">{{ a.alvo }}</h4>
+                            <span class="font-mono font-bold text-slate-700 bg-slate-50 px-2 py-1 rounded border border-slate-200 text-[10px]">{{ a.identificador }}</span>
+                        </div>
+                        <p class="text-[11px] text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-200 italic mt-auto">"...{{ a.contexto|safe }}..."</p>
+
+                        <div class="mt-4 pt-4 border-t border-slate-100">
+                            <textarea id="msg-srv-esp-{{ forloop.counter }}" style="position: absolute; left: -9999px; top: -9999px;" tabindex="-1" aria-hidden="true">{{ a.whatsapp }}</textarea>
+                            <button id="btn-srv-esp-{{ forloop.counter }}" onclick="copiarSemAlert('msg-srv-esp-{{ forloop.counter }}', 'btn-srv-esp-{{ forloop.counter }}')" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded font-black uppercase text-[10px] shadow-sm flex items-center justify-center gap-2 transition-all">
+                                📋 COPIAR AVISO
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            {% endfor %}
+
+            {% for a in alertas.servidores %}
+                {% if a.etiqueta == 'GERAL' %}
+                <div class="relative flex flex-col h-full">
+                    <div class="w-fit bg-slate-200 border-t-2 border-l-2 border-r-2 border-slate-300 rounded-t-xl px-4 py-2 relative z-10 -mb-[2px] flex items-center gap-2 shadow-sm">
+                        <span class="text-sm">📄</span>
+                        <h2 class="font-black text-slate-700 uppercase tracking-widest text-[10px]">
+                            {{ a.etiqueta }}
+                        </h2>
+                    </div>
+                    <div class="bg-white border-2 border-slate-300 rounded-b-xl rounded-tr-xl shadow-md relative z-0 p-5 flex flex-col flex-1">
+                        <div class="flex justify-between items-start mb-4">
+                            <h4 class="font-black text-slate-800 uppercase text-sm">{{ a.alvo }}</h4>
+                            <span class="font-mono font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded border border-slate-200 text-[10px]">{{ a.identificador }}</span>
+                        </div>
+                        <p class="text-[11px] text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-200 italic mt-auto">"...{{ a.contexto|safe }}..."</p>
+
+                        <div class="mt-4 pt-4 border-t border-slate-100">
+                            <textarea id="msg-srv-ger-{{ forloop.counter }}" style="position: absolute; left: -9999px; top: -9999px;" tabindex="-1" aria-hidden="true">{{ a.whatsapp }}</textarea>
+                            <button id="btn-srv-ger-{{ forloop.counter }}" onclick="copiarSemAlert('msg-srv-ger-{{ forloop.counter }}', 'btn-srv-ger-{{ forloop.counter }}')" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded font-black uppercase text-[10px] shadow-sm flex items-center justify-center gap-2 transition-all">
+                                📋 COPIAR AVISO
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            {% endfor %}
+
+            {% for a in alertas.termos_encontrados %}
+            <div class="relative flex flex-col h-full">
+                <div class="w-fit {{ a.cor_css.bg }} border-t-2 border-l-2 border-r-2 {{ a.cor_css.border }} rounded-t-xl px-4 py-2 relative z-10 -mb-[2px] flex items-center gap-2 shadow-sm">
+                    <span class="text-sm">{{ a.cor_css.icon }}</span>
+                    <h2 class="font-black {{ a.cor_css.text }} uppercase tracking-widest text-[10px]">ALERTA ESPECIAL</h2>
+                </div>
+                <div class="bg-white border-2 {{ a.cor_css.border }} rounded-b-xl rounded-tr-xl shadow-md relative z-0 p-5 flex flex-col flex-1">
+                    <h4 class="font-black text-slate-800 uppercase text-sm mb-4">{{ a.alvo }}</h4>
+                    <p class="text-[11px] text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-200 italic mt-auto">"...{{ a.contexto|safe }}..."</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if alertas.unidades %}
+        <div class="w-full border-b-2 border-slate-200 mt-8 mb-6 pb-2">
+            <h3 class="font-black text-purple-400 uppercase tracking-widest text-xs">Unidades Citadas</h3>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            {% for u in alertas.unidades %}
+            <div class="relative flex flex-col h-full">
+                <div class="w-fit bg-purple-100 border-t-2 border-l-2 border-r-2 border-purple-400 rounded-t-xl px-4 py-2 relative z-10 -mb-[2px] flex items-center gap-2 shadow-sm">
+                    <span class="text-sm">🏢</span>
+                    <h2 class="font-black text-purple-900 uppercase tracking-widest text-[10px]">UNIDADE CITADA</h2>
+                </div>
+                <div class="bg-white border-2 border-purple-400 rounded-b-xl rounded-tr-xl shadow-md relative z-0 p-5 flex flex-col flex-1">
+                    <div class="flex justify-between items-start mb-4">
+                        <h4 class="font-black text-slate-800 uppercase text-sm">{{ u.alvo }}</h4>
+                    </div>
+                    <p class="text-[11px] text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-200 italic mt-auto">"...{{ u.contexto|safe }}..."</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+    {% endif %}
+</div>
+
+<script>
+    const fileInput = document.getElementById('file-input');
+    fileInput.onchange = () => {
+        if(fileInput.files.length > 0) {
+            document.getElementById('state-empty').classList.add('hidden');
+            document.getElementById('state-selected').classList.remove('hidden');
+            document.getElementById('file-name-text').innerText = fileInput.files[0].name;
+            document.getElementById('drop-zone-visual').classList.add('bg-blue-50', 'border-blue-500');
+        }
+    };
+
+    document.getElementById('btn-submit').onclick = function() {
+        if(fileInput.files.length > 0) {
+            this.classList.add('cursor-wait', 'opacity-90');
+            this.innerHTML = `<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> <span class="font-black text-sm uppercase tracking-widest">PROCESSANDO BOLETIM...</span>`;
+        }
+    };
+
+    function copiarSemAlert(elementId, btnId) {
+        const textArea = document.getElementById(elementId);
+
+        // Função interna para fazer a animação verde de sucesso
+        const animarBotao = () => {
+            const btn = document.getElementById(btnId);
+            const originalContent = btn.innerHTML;
+            const originalClasses = btn.className;
+
+            btn.className = 'w-full bg-slate-800 text-white py-2.5 rounded font-black uppercase text-[10px] shadow-sm flex items-center justify-center gap-2 transition-all mt-auto';
+            btn.innerHTML = `<span class="tracking-widest text-green-400">✓ COPIADO!</span>`;
+
+            setTimeout(() => {
+                btn.className = originalClasses;
+                btn.innerHTML = originalContent;
+            }, 2000);
+        };
+
+        // Verifica se o navegador suporta a API moderna (e se está em HTTPS)
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(textArea.value).then(animarBotao).catch(err => console.error('Erro na API Clipboard', err));
+        } else {
+            // Fallback (Plano B) para conexões HTTP ou navegadores mais antigos
+            textArea.select();
+            textArea.setSelectionRange(0, 99999); // Necessário para funcionar em telemóveis
+            try {
+                document.execCommand('copy');
+                animarBotao();
+            } catch (err) {
+                alert('O seu navegador bloqueou a cópia. Por favor, copie manualmente.');
+            }
+            // Remove a seleção azul do texto para ficar esteticamente limpo
+            window.getSelection().removeAllRanges();
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,15 @@
+asgiref==3.11.1
+cffi==2.0.0
+charset-normalizer==3.4.4
+cryptography==46.0.5
+Django==6.0.2
+django-tailwind==4.4.2
+pdfminer.six==20251230
+pdfplumber==0.11.9
+pillow==12.1.1
+pycparser==3.0
+pypdf==6.7.0
+pypdfium2==5.4.0
+pytailwindcss==0.3.0
+pytz==2025.2
+sqlparse==0.5.5

@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-8">
+    
+    <div class="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-slate-200 pb-4">
+        <div>
+            <h1 class="text-3xl font-black text-slate-800 tracking-tight">Gestão de Acesso</h1>
+            <p class="text-slate-500 mt-1">Controle de permissões e cadastro de servidores no HRADAR.</p>
+        </div>
+        <a href="{% url 'criar_usuario' %}" class="bg-blue-900 hover:bg-blue-800 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg flex items-center gap-2 transition-all">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+            NOVO SERVIDOR
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="p-4 rounded-xl border {% if message.tags == 'error' %}bg-red-50 border-red-100 text-red-700{% else %}bg-green-50 border-green-100 text-green-700{% endif %} flex items-center gap-3 font-bold text-sm">
+                <span>{% if message.tags == 'error' %}⚠️{% else %}✅{% endif %}</span> {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <table class="w-full text-left border-collapse">
+            <thead class="bg-slate-50 border-b border-slate-200">
+                <tr>
+                    <th class="px-6 py-4 text-xs font-bold uppercase text-slate-500 tracking-wider">Servidor / ID</th>
+                    <th class="px-6 py-4 text-xs font-bold uppercase text-slate-500 tracking-wider">Status & Perfil</th>
+                    <th class="px-6 py-4 text-xs font-bold uppercase text-slate-500 tracking-wider text-right">Ações</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for u in usuarios %}
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs">
+                                {{ u.first_name|first|default:"S" }}
+                            </div>
+                            <div>
+                                <div class="font-bold text-slate-800">{{ u.first_name }}</div>
+                                <div class="font-mono text-xs text-slate-400">{{ u.username }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if u.is_superuser %}
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+                                Administrador
+                            </span>
+                        {% else %}
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase bg-slate-100 text-slate-600 border border-slate-200">
+                                Servidor Operacional
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        {% if u.id == user.id %}
+                            <span class="text-xs font-bold text-slate-300 italic select-none">Sua Conta</span>
+                        {% else %}
+                            <div class="flex justify-end gap-4">
+                                <a href="{% url 'editar_usuario' u.id %}" class="text-blue-600 hover:text-blue-800 font-bold text-xs uppercase flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                    Editar
+                                </a>
+                                {% if not u.is_superuser %}
+                                <a href="{% url 'deletar_usuario' u.id %}" onclick="return confirm('ATENÇÃO: Remover este servidor permanentemente?')" class="text-red-500 hover:text-red-700 font-bold text-xs uppercase flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    Excluir
+                                </a>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

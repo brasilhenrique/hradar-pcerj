@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-xl mx-auto bg-white p-8 rounded-2xl shadow-xl border border-slate-200">
+    <h1 class="text-2xl font-black text-blue-900 mb-8 flex items-center gap-2 italic uppercase">
+        <span>👤</span> Inserir Novo Agente
+    </h1>
+
+    <form method="POST" class="space-y-6" id="form-novo-usuario">
+        {% csrf_token %}
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs font-black text-slate-500 uppercase">ID Funcional / Login</label>
+                <input type="text" name="username" required oninput="this.value = this.value.replace(/[^0-9]/g, '');" placeholder="Ex: 41378610" class="mt-1 block w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-blue-500 focus:border-blue-500 bg-slate-50 font-mono">
+            </div>
+            <div>
+                <label class="block text-xs font-black text-slate-500 uppercase">Nome do Servidor</label>
+                <input type="text" name="first_name" required placeholder="Nome Completo" class="mt-1 block w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-blue-500 focus:border-blue-500">
+            </div>
+        </div>
+
+        <div class="p-4 bg-amber-50 border-l-4 border-amber-500 text-amber-900 text-xs italic">
+            *Nota:* A senha inicial será o ID Funcional do agente. Ele será obrigado a alterá-la no primeiro acesso.
+        </div>
+
+        <div class="flex justify-end gap-4 pt-6">
+            <a href="{% url 'lista_usuarios' %}" id="btn-cancelar" class="px-6 py-2 text-slate-400 font-bold hover:text-slate-600 transition-colors flex items-center">CANCELAR</a>
+            <button type="submit" id="btn-salvar" class="bg-blue-900 text-white px-8 py-3 rounded-xl font-black hover:bg-blue-800 shadow-lg transition-all uppercase tracking-wider flex items-center justify-center gap-2">
+                <span id="txt-salvar">Cadastrar Agente</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.getElementById('form-novo-usuario').addEventListener('submit', function() {
+        const btn = document.getElementById('btn-salvar');
+        const txt = document.getElementById('txt-salvar');
+        const cancelar = document.getElementById('btn-cancelar');
+        
+        btn.disabled = true;
+        cancelar.style.pointerEvents = 'none';
+        
+        btn.style.backgroundColor = '#64748b'; 
+        btn.classList.add('cursor-wait');
+        
+        txt.innerHTML = `
+            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Processando...
+        `;
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+    
+    <div class="bg-white p-8 rounded-3xl shadow-2xl border border-slate-200">
+        <div class="mb-6 border-b border-slate-100 pb-4">
+            <h1 class="text-2xl font-black text-slate-800 uppercase italic flex items-center gap-2">
+                <span>⚡</span> Carga Rápida de Efetivo
+            </h1>
+            <p class="text-xs text-slate-500 mt-1 font-bold">Adicione múltiplos servidores de uma vez.</p>
+        </div>
+
+        <form method="POST" class="space-y-6">
+            {% csrf_token %}
+            
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <p class="text-xs font-black text-slate-500 uppercase mb-2">Instruções de Formatação:</p>
+                <code class="block text-[10px] text-slate-600 font-mono bg-white p-3 rounded border border-slate-200">
+                    NOME COMPLETO ; ID FUNCIONAL ; LOTAÇÃO (OPCIONAL)<br>
+                    <br>
+                    Exemplos:<br>
+                    JOSÉ DA SILVA ; 12345678 ; SPSD<br>
+                    CARLOS PEIXOTO ; 1111111 ; DGPI<br>
+                    MARCELO SALGADO ; 22222222
+                </code>
+                <p class="text-[10px] text-slate-400 mt-2 italic">* Espaços em excesso serão removidos automaticamente.</p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-black text-slate-500 uppercase mb-2">Cole a lista aqui:</label>
+                <textarea name="lista_servidores" rows="10" class="w-full p-4 border border-slate-300 rounded-xl font-mono text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none uppercase" placeholder="COLE SEUS DADOS AQUI..."></textarea>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-2">
+                <a href="{% url 'lista_servidores' %}" class="px-6 py-3 text-slate-400 font-bold uppercase text-xs hover:text-slate-600">Cancelar</a>
+                <button type="submit" class="bg-blue-900 text-white px-8 py-3 rounded-xl font-black uppercase text-xs hover:bg-blue-800 shadow-lg transition-all">
+                    Processar Lista
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

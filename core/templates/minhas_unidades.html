@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <div class="bg-white p-6 rounded-2xl shadow-lg border border-slate-200">
+        <h1 class="text-2xl font-black text-blue-900 uppercase italic mb-6">🏢 Monitorar Nova Unidade</h1>
+        <form method="POST" action="{% url 'criar_unidade' %}" class="flex gap-4">
+            {% csrf_token %}
+            <input type="text" name="sigla" placeholder="Ex: DGPC, GAECO, 12ª DP" required 
+                   class="flex-1 px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none uppercase font-bold">
+            <button type="submit" class="bg-blue-900 text-white px-8 py-3 rounded-xl font-black hover:bg-blue-800 shadow-md">ATIVAR RADAR</button>
+        </form>
+    </div>
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+        <table class="w-full text-left">
+            <tbody class="divide-y divide-slate-100">
+                {% for u in unidades %}
+                <tr class="hover:bg-blue-50/50">
+                    <td class="px-6 py-4 font-black text-blue-900 text-lg uppercase">{{ u.sigla_orgao }}</td>
+                    <td class="px-6 py-4 text-right"><a href="{% url 'deletar_alvo' 'unidade' u.id %}" class="text-red-500 font-black text-xs uppercase">Remover</a></td>
+                </tr>
+                {% empty %}
+                <tr><td class="px-6 py-8 text-center text-slate-400 italic">Nenhuma unidade cadastrada.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
