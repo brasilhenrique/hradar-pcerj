@@ -194,85 +194,68 @@ def extrair_remocoes_estruturadas(arquivo_pdf):
         r'Piloto Policial', r'Oficial de Cart[óo]rio Policial', r'Agente de Pol[íi]cia Cient[íi]fica'
     ]
     regex_cargos_str = r'(' + '|'.join(cargos) + r')'
-    reg_completo = re.compile(r'^(.*?)\s+' + regex_cargos_str + r'\s+([\d\.\-]+)\s+(.*?)\s+(SEI-\d{6}/\d{6}/\d{4})$', re.IGNORECASE)
-    reg_lotacao = re.compile(r'^(.*?)\s+' + regex_cargos_str + r'\s+([\d\.\-]+)\s+(SEI-\d{6}/\d{6}/\d{4})$', re.IGNORECASE)
-    padrao_destino = re.compile(r'^(\d{1,3}[ªº°aAoO]?\s*[A-Za-z]+|DEAM\s+[A-Za-zÀ-ÿ]+|DH-?[A-Za-zÀ-ÿ]+|DC-[A-Za-zÀ-ÿ]+|[A-Za-z0-9]+(?:-[A-Za-z0-9]+)?)\s+(.*)$', re.IGNORECASE)
+    
+    # 1. Regex indestrutível: sem ^ e sem $ para ignorar espaços e lixo invisível nas pontas
+    reg_completo = re.compile(r'(.*?)\s+' + regex_cargos_str + r'\s+([\d\.\-]+)\s+(.*?)\s+(SEI-\d{6}/\d{6}/\d{4})', re.IGNORECASE)
+    reg_lotacao = re.compile(r'(.*?)\s+' + regex_cargos_str + r'\s+([\d\.\-]+)\s+(SEI-\d{6}/\d{6}/\d{4})', re.IGNORECASE)
+    padrao_destino = re.compile(r'^(\d{1,3}[ªº°aAoO]?\s*[A-Za-z]+|DEAM\s+[A-Za-zÀ-ÿ]+|DH-?[A-Za-zÀ-ÿ]+|DC-[A-Za-zÀ-ÿ]+|[A-Za-z0-9]+(?:-[A-Za-z0-9]+)?)\s+(.*)', re.IGNORECASE)
 
-    pdf_para_plumber = None
-    try:
-        paginas_alvo = []
-        reader = pypdf.PdfReader(arquivo_pdf)
-        lendo_tabela = False
-        
-        for i, page in enumerate(reader.pages):
-            txt = page.extract_text()
-            if not txt: continue
+    def processar_linhas(linhas):
+        encontrados = []
+        for linha in linhas:
+            l_limpa = linha.strip()
+            if not l_limpa: continue
             
-            # 1. Se achou o título, liga o motor de captura contínua
-            if REGEX_TITULOS_MOV.search(txt):
-                lendo_tabela = True
-                
-            if lendo_tabela:
-                paginas_alvo.append(i)
-                
-                # 2. Se bater de frente com OUTRA seção, desliga para não ler o BI todo
-                paradas = ["ATOS DA", "ATOS DO", "DESIGNAÇÃO", "DESIGNAÇÕES", "COMPARECIMENTO", "LICENÇA", "PORTARIA", "RESOLUÇÃO", "COMUNICADO"]
-                if any(p in txt.upper() for p in paradas) and not REGEX_TITULOS_MOV.search(txt):
-                    lendo_tabela = False
+            m_comp = reg_completo.search(l_limpa)
+            m_lota = reg_lotacao.search(l_limpa)
+            match = m_comp or m_lota
+            
+            if match:
+                if match == m_comp:
+                    dn, cargo, id_f, orig, sei = match.groups()
+                else:
+                    dn, cargo, id_f, sei = match.groups()
+                    orig = "1ª LOTAÇÃO"
+                    
+                m_dest = padrao_destino.search(dn.strip())
+                if m_dest:
+                    destino, nome = m_dest.groups()
+                else:
+                    p = dn.strip().split(' ')
+                    destino, nome = p[0], " ".join(p[1:])
+                    
+                encontrados.append({
+                    "DESTINO": destino.strip(), "NOME": limpar_nome_dr(nome), "CARGO": cargo.strip(),
+                    "ID": id_f.strip(), "ID_LIMPO": limpar_id(id_f), "ORIGEM": orig.strip(), "SEI": sei.strip()
+                })
+        return encontrados
 
-        if not paginas_alvo: return []
-        paginas_alvo = sorted(list(set(paginas_alvo)))
-
-        writer = pypdf.PdfWriter()
-        for idx in paginas_alvo:
-            writer.add_page(reader.pages[idx])
-
-        pdf_para_plumber = BytesIO()
-        writer.write(pdf_para_plumber)
-        pdf_para_plumber.seek(0)
-    except Exception as e:
-        print(f"[HRADAR AVISO] PyPDF falhou no fatiamento ({e}). Plumber fará a varredura profunda.")
-        arquivo_pdf.seek(0)
-        pdf_para_plumber = arquivo_pdf
-
+    # TENTATIVA 1: Motor ultrarrápido (PyPDF). O seu debug provou que funciona na DO!
     try:
-        with pdfplumber.open(pdf_para_plumber) as pdf:
+        reader = pypdf.PdfReader(arquivo_pdf)
+        todas_linhas = []
+        for page in reader.pages:
+            txt = page.extract_text()
+            if txt: todas_linhas.extend(txt.split('\n'))
+            
+        transferencias = processar_linhas(todas_linhas)
+        if transferencias:
+            return transferencias  # Se encontrou, devolve logo e não usa o Plumber
+    except Exception:
+        pass
+
+    # TENTATIVA 2: Motor de contingência (Plumber) caso o PyPDF falhe num BI futuro
+    arquivo_pdf.seek(0)
+    try:
+        with pdfplumber.open(arquivo_pdf) as pdf:
+            todas_linhas_plumber = []
             for pagina in pdf.pages:
-                texto_layout = pagina.extract_text(layout=True)
-                if not texto_layout: continue
-                linhas = texto_layout.split('\n')
-                
-                for linha in linhas:
-                    l_limpa = linha.strip()
-                    if not l_limpa: continue
-                    
-                    # Sem armadilhas! O Plumber simplesmente caça a regex em TODAS as linhas 
-                    # das páginas que o Fatiador PyPDF já selecionou previamente.
-                    m_comp = reg_completo.search(l_limpa)
-                    m_lota = reg_lotacao.search(l_limpa)
-                    match = m_comp or m_lota
-                    
-                    if match:
-                        if match == m_comp:
-                            dn, cargo, id_f, orig, sei = match.groups()
-                        else:
-                            dn, cargo, id_f, sei = match.groups()
-                            orig = "1ª LOTAÇÃO"
-                            
-                        m_dest = padrao_destino.search(dn.strip())
-                        if m_dest:
-                            destino, nome = m_dest.groups()
-                        else:
-                            p = dn.strip().split(' ')
-                            destino, nome = p[0], " ".join(p[1:])
-                            
-                        transferencias.append({
-                            "DESTINO": destino.strip(), "NOME": limpar_nome_dr(nome), "CARGO": cargo.strip(),
-                            "ID": id_f.strip(), "ID_LIMPO": limpar_id(id_f), "ORIGEM": orig.strip(), "SEI": sei.strip()
-                        })
+                txt = pagina.extract_text(layout=True)
+                if txt: todas_linhas_plumber.extend(txt.split('\n'))
+            
+            transferencias = processar_linhas(todas_linhas_plumber)
     except Exception as e:
         print(f"[HRADAR PERF] Erro no Plumber: {e}")
-        pass
 
     return transferencias
 
