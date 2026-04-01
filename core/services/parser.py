@@ -202,12 +202,23 @@ def extrair_remocoes_estruturadas(arquivo_pdf):
     try:
         paginas_alvo = []
         reader = pypdf.PdfReader(arquivo_pdf)
-        total_paginas = len(reader.pages)
+        lendo_tabela = False
+        
         for i, page in enumerate(reader.pages):
             txt = page.extract_text()
-            if txt and REGEX_TITULOS_MOV.search(txt):
+            if not txt: continue
+            
+            # 1. Se achou o título, liga o motor de captura contínua
+            if REGEX_TITULOS_MOV.search(txt):
+                lendo_tabela = True
+                
+            if lendo_tabela:
                 paginas_alvo.append(i)
-                if i + 1 < total_paginas: paginas_alvo.append(i + 1)
+                
+                # 2. Se bater de frente com OUTRA seção, desliga para não ler o BI todo
+                paradas = ["ATOS DA", "ATOS DO", "DESIGNAÇÃO", "DESIGNAÇÕES", "COMPARECIMENTO", "LICENÇA", "PORTARIA", "RESOLUÇÃO", "COMUNICADO"]
+                if any(p in txt.upper() for p in paradas) and not REGEX_TITULOS_MOV.search(txt):
+                    lendo_tabela = False
 
         if not paginas_alvo: return []
         paginas_alvo = sorted(list(set(paginas_alvo)))
