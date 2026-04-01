@@ -237,42 +237,39 @@ def extrair_remocoes_estruturadas(arquivo_pdf):
 
     try:
         with pdfplumber.open(pdf_para_plumber) as pdf:
-            lendo_movimentacao = False
             for pagina in pdf.pages:
                 texto_layout = pagina.extract_text(layout=True)
                 if not texto_layout: continue
                 linhas = texto_layout.split('\n')
+                
                 for linha in linhas:
                     l_limpa = linha.strip()
                     if not l_limpa: continue
-                    if REGEX_TITULOS_MOV.search(l_limpa):
-                        lendo_movimentacao = True
-                        continue
-                    parada = ["ATOS DA", "ATOS DO", "DESIGNAÇÃO", "COMPARECIMENTO", "DESIGNAÇÕES"]
-                    if lendo_movimentacao and any(p in l_limpa.upper() for p in parada):
-                        if not re.search(regex_cargos_str, l_limpa, re.IGNORECASE):
-                            lendo_movimentacao = False
-                            continue
-                    if lendo_movimentacao:
-                        m_comp = reg_completo.search(l_limpa)
-                        m_lota = reg_lotacao.search(l_limpa)
-                        match = m_comp or m_lota
-                        if match:
-                            if match == m_comp:
-                                dn, cargo, id_f, orig, sei = match.groups()
-                            else:
-                                dn, cargo, id_f, sei = match.groups()
-                                orig = "1ª LOTAÇÃO"
-                            m_dest = padrao_destino.search(dn.strip())
-                            if m_dest:
-                                destino, nome = m_dest.groups()
-                            else:
-                                p = dn.strip().split(' ')
-                                destino, nome = p[0], " ".join(p[1:])
-                            transferencias.append({
-                                "DESTINO": destino.strip(), "NOME": limpar_nome_dr(nome), "CARGO": cargo.strip(),
-                                "ID": id_f.strip(), "ID_LIMPO": limpar_id(id_f), "ORIGEM": orig.strip(), "SEI": sei.strip()
-                            })
+                    
+                    # Sem armadilhas! O Plumber simplesmente caça a regex em TODAS as linhas 
+                    # das páginas que o Fatiador PyPDF já selecionou previamente.
+                    m_comp = reg_completo.search(l_limpa)
+                    m_lota = reg_lotacao.search(l_limpa)
+                    match = m_comp or m_lota
+                    
+                    if match:
+                        if match == m_comp:
+                            dn, cargo, id_f, orig, sei = match.groups()
+                        else:
+                            dn, cargo, id_f, sei = match.groups()
+                            orig = "1ª LOTAÇÃO"
+                            
+                        m_dest = padrao_destino.search(dn.strip())
+                        if m_dest:
+                            destino, nome = m_dest.groups()
+                        else:
+                            p = dn.strip().split(' ')
+                            destino, nome = p[0], " ".join(p[1:])
+                            
+                        transferencias.append({
+                            "DESTINO": destino.strip(), "NOME": limpar_nome_dr(nome), "CARGO": cargo.strip(),
+                            "ID": id_f.strip(), "ID_LIMPO": limpar_id(id_f), "ORIGEM": orig.strip(), "SEI": sei.strip()
+                        })
     except Exception as e:
         print(f"[HRADAR PERF] Erro no Plumber: {e}")
         pass
