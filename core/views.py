@@ -205,6 +205,9 @@ def processar_transferencia(request):
         nome = request.POST.get('nome', '').upper().strip()
         id_func_raw = request.POST.get('id_funcional', '').strip()
         servidor_id = request.POST.get('servidor_id')
+        
+        # 1. Captura a unidade enviada pelo front-end
+        unidade = request.POST.get('unidade', 'PENDENTE').upper().strip()
 
         id_func = re.sub(r'\D', '', id_func_raw).lstrip('0')
         novo_db_id = None
@@ -214,15 +217,30 @@ def processar_transferencia(request):
             messages.success(request, f"{nome} removido da Watchlist.")
 
         elif acao == 'adicionar' and nome and id_func:
-            srv, criado = ServidorMonitorado.objects.get_or_create(agente=request.user, nome=nome, id_funcional=id_func)
+            # 2. Ao criar, já insere a unidade correta
+            srv, criado = ServidorMonitorado.objects.get_or_create(
+                agente=request.user, 
+                nome=nome, 
+                id_funcional=id_func,
+                defaults={'unidade': unidade}
+            )
+            
+            # Se o servidor já existia mas com lotação velha ou PENDENTE, atualiza
+            if not criado and srv.unidade != unidade and unidade != 'PENDENTE':
+                srv.unidade = unidade
+                srv.save()
+                
             novo_db_id = srv.id
             if criado:
-                messages.success(request, f"{nome} adicionado à Watchlist.")
+                messages.success(request, f"{nome} adicionado à Watchlist na unidade {unidade}.")
             else:
-                messages.warning(request, f"{nome} já está na Watchlist.")
+                messages.warning(request, f"{nome} já estava na lista. Lotação atualizada para {unidade}.")
 
         elif acao == 'atualizar':
-            messages.success(request, f"Lotação de {nome} reconhecida e atualizada.")
+            # 3. Atualiza diretamente o servidor existente
+            if servidor_id:
+                ServidorMonitorado.objects.filter(id=servidor_id, agente=request.user).update(unidade=unidade)
+            messages.success(request, f"Lotação de {nome} atualizada para {unidade}.")
 
         if 'alertas_salvos' in request.session:
             alertas = request.session['alertas_salvos']

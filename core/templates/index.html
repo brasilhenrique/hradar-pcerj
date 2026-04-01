@@ -129,13 +129,14 @@
                     </div>
                     {% else %}
                     <form method="POST" action="{% url 'processar_transferencia' %}" class="mt-auto">
-                        {% csrf_token %}
-                        <input type="hidden" name="nome" value="{{ t.NOME }}">
-                        <input type="hidden" name="id_funcional" value="{{ t.ID_LIMPO }}">
-                        <button type="submit" name="acao" value="adicionar" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded font-black uppercase text-[10px] shadow-sm transition-all">
-                            Adicionar à Watchlist
-                        </button>
-                    </form>
+                        {% csrf_token %}
+                        <input type="hidden" name="nome" value="{{ t.NOME }}">
+                        <input type="hidden" name="id_funcional" value="{{ t.ID_LIMPO }}">
+                        <input type="hidden" name="unidade" value="{{ t.DESTINO }}">
+                        <button type="submit" name="acao" value="adicionar" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded font-black uppercase text-[10px] shadow-sm transition-all">
+                            Adicionar à Watchlist
+                        </button>
+                    </form>
                     {% endif %}
                 </div>
             </div>
@@ -192,14 +193,15 @@
                     </div>
                     {% if t.DB_ID %}
                     <form method="POST" action="{% url 'processar_transferencia' %}" class="mt-auto">
-                        {% csrf_token %}
-                        <input type="hidden" name="nome" value="{{ t.NOME }}">
-                        <input type="hidden" name="id_funcional" value="{{ t.ID_LIMPO }}">
-                        <input type="hidden" name="servidor_id" value="{{ t.DB_ID }}">
-                        <button type="submit" name="acao" value="atualizar" class="w-full bg-stone-700 hover:bg-stone-800 text-white py-2.5 rounded font-black uppercase text-[10px] shadow-sm transition-all">
-                            Ciente / Atualizar
-                        </button>
-                    </form>
+                        {% csrf_token %}
+                        <input type="hidden" name="nome" value="{{ t.NOME }}">
+                        <input type="hidden" name="id_funcional" value="{{ t.ID_LIMPO }}">
+                        <input type="hidden" name="servidor_id" value="{{ t.DB_ID }}">
+                        <input type="hidden" name="unidade" value="{{ t.DESTINO }}">
+                        <button type="submit" name="acao" value="atualizar" class="w-full bg-stone-700 hover:bg-stone-800 text-white py-2.5 rounded font-black uppercase text-[10px] shadow-sm transition-all">
+                            Ciente / Atualizar
+                        </button>
+                    </form>
                     {% else %}
                     <div class="mt-auto text-center bg-stone-100 py-2.5 rounded border border-stone-300">
                         <span class="text-[10px] font-black text-stone-600 uppercase tracking-widest">Não Monitorado</span>
